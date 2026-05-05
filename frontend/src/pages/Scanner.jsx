@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Play, Search, Shield, AlertTriangle, ShieldCheck, Server } from 'lucide-react';
 import api from '../services/api';
 import { useScanStore } from '../store';
@@ -11,6 +12,7 @@ export const Scanner = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [scans, setScans] = useState([]);
+  const navigate = useNavigate();
   
   const { activeScans } = useScanStore();
   useWebSocket();
@@ -115,7 +117,7 @@ export const Scanner = () => {
                     }}
                   >
                     <type.icon style={{ marginBottom: '0.75rem', color: scanType === type.id ? 'var(--primary)' : 'var(--text-muted)' }} size={24} />
-                    <h4 style={{ fontWeight: 600, color: '#fff', marginBottom: '0.25rem' }}>{type.title}</h4>
+                    <h4 style={{ fontWeight: 600, color: 'var(--text-main)', marginBottom: '0.25rem' }}>{type.title}</h4>
                     <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', lineHeight: 1.5 }}>{type.desc}</p>
                   </div>
                 ))}
@@ -141,7 +143,7 @@ export const Scanner = () => {
               activeScans.map(scan => (
                 <div key={scan.id} style={{ padding: '1rem', borderRadius: 'var(--radius)', background: 'rgba(0,0,0,0.2)', border: '1px solid var(--border)' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.5rem' }}>
-                    <div style={{ fontWeight: 500, color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', paddingRight: '1rem' }}>{scan.target_url}</div>
+                    <div style={{ fontWeight: 500, color: 'var(--text-main)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', paddingRight: '1rem' }}>{scan.target_url}</div>
                     <button onClick={() => handleCancelScan(scan.id)} style={{ fontSize: '0.75rem', color: 'var(--critical)', background: 'none', border: 'none', cursor: 'pointer' }}>Cancel</button>
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '0.5rem' }}>
@@ -182,7 +184,7 @@ export const Scanner = () => {
               ) : (
                 scans.map(scan => (
                   <tr key={scan.id}>
-                    <td style={{ fontWeight: 500, color: '#fff' }}>{scan.target_url}</td>
+                    <td style={{ fontWeight: 500, color: 'var(--text-main)' }}>{scan.target_url}</td>
                     <td style={{ textTransform: 'uppercase', fontSize: '0.75rem', letterSpacing: '0.05em', color: 'var(--text-muted)' }}>{scan.scan_type}</td>
                     <td>
                       <Badge severity={
@@ -209,7 +211,7 @@ export const Scanner = () => {
                     <td>
                       <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
                         {scan.status === 'completed' && (
-                          <Button variant="secondary" style={{ padding: '0.25rem 0.5rem', fontSize: '0.75rem' }}>Report</Button>
+                          <Button variant="secondary" onClick={() => navigate('/reports', { state: { scanId: scan.id } })} style={{ padding: '0.25rem 0.5rem', fontSize: '0.75rem' }}>Report</Button>
                         )}
                         <button onClick={() => handleCancelScan(scan.id)} style={{ color: 'var(--critical)', fontSize: '0.875rem', background: 'none', border: 'none', cursor: 'pointer' }}>
                           Delete

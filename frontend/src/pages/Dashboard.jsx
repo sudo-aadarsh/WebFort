@@ -98,14 +98,15 @@ export const Dashboard = () => {
           <div className="chart-container">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={stats.vulnerabilityTypes} layout="vertical" margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" horizontal={true} vertical={false} />
-                <XAxis type="number" stroke="#94a3b8" />
-                <YAxis dataKey="type" type="category" width={150} stroke="#94a3b8" tick={{ fill: '#f8fafc', fontSize: 12 }} />
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" horizontal={true} vertical={false} />
+                <XAxis type="number" stroke="var(--border)" tick={{ fill: 'var(--text-muted)', fontSize: 12 }} />
+                <YAxis dataKey="type" type="category" width={150} stroke="var(--border)" tick={{ fill: 'var(--text-main)', fontSize: 12, fontWeight: 500 }} />
                 <RechartsTooltip 
-                  cursor={{ fill: 'rgba(255,255,255,0.02)' }}
-                  contentStyle={{ backgroundColor: 'rgba(15, 23, 42, 0.95)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', boxShadow: 'var(--shadow)' }}
+                  cursor={{ fill: 'var(--bg-hover)' }}
+                  contentStyle={{ backgroundColor: 'var(--bg-base)', border: 'none', borderRadius: '16px', boxShadow: 'var(--shadow-2)', color: 'var(--text-main)' }}
+                  itemStyle={{ color: 'var(--text-main)', fontWeight: 600 }}
                 />
-                <Bar dataKey="count" fill="url(#colorGradient)" radius={[0, 4, 4, 0]}>
+                <Bar dataKey="count" fill="url(#colorGradient)" radius={[0, 16, 16, 0]} barSize={24}>
                   {stats.vulnerabilityTypes.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={index % 2 === 0 ? 'var(--primary)' : 'var(--accent)'} />
                   ))}
@@ -133,18 +134,19 @@ export const Dashboard = () => {
                     cx="50%"
                     cy="50%"
                     innerRadius={70}
-                    outerRadius={100}
-                    paddingAngle={5}
+                    outerRadius={105}
+                    paddingAngle={2}
                     dataKey="value"
-                    stroke="none"
+                    stroke="var(--bg-card)"
+                    strokeWidth={4}
                   >
                     {pieData.map((entry, index) => (
                       <Cell key={`cell-${index}`} fill={entry.color} />
                     ))}
                   </Pie>
                   <RechartsTooltip 
-                    contentStyle={{ backgroundColor: 'rgba(15, 23, 42, 0.95)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px' }}
-                    itemStyle={{ color: '#fff' }}
+                    contentStyle={{ backgroundColor: 'var(--bg-base)', border: 'none', borderRadius: '16px', boxShadow: 'var(--shadow-2)', color: 'var(--text-main)' }}
+                    itemStyle={{ color: 'var(--text-main)', fontWeight: 600 }}
                   />
                 </PieChart>
               </ResponsiveContainer>
@@ -153,7 +155,7 @@ export const Dashboard = () => {
             )}
             {/* Center Text */}
             <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none' }}>
-              <span style={{ fontSize: '2.5rem', fontWeight: 700, color: '#fff', lineHeight: 1 }}>{stats.totalVulnerabilities}</span>
+              <span style={{ fontSize: '2.5rem', fontWeight: 700, color: 'var(--text-main)', lineHeight: 1 }}>{stats.totalVulnerabilities}</span>
               <span style={{ fontSize: '0.75rem', letterSpacing: '0.05em', color: 'var(--text-muted)', textTransform: 'uppercase', marginTop: '0.25rem' }}>Total</span>
             </div>
           </div>
@@ -163,7 +165,7 @@ export const Dashboard = () => {
               <div key={item.name} style={{ display: 'flex', alignItems: 'center', fontSize: '0.875rem' }}>
                 <span style={{ width: '10px', height: '10px', borderRadius: '50%', marginRight: '0.5rem', backgroundColor: item.color }}></span>
                 <span style={{ color: 'var(--text-muted)', flex: 1 }}>{item.name}</span>
-                <span style={{ fontWeight: 500, color: '#fff' }}>{item.value}</span>
+                <span style={{ fontWeight: 500, color: 'var(--text-main)' }}>{item.value}</span>
               </div>
             ))}
           </div>
@@ -194,7 +196,7 @@ export const Dashboard = () => {
               ) : (
                 stats.recentScans.map(scan => (
                   <tr key={scan.id}>
-                    <td style={{ fontWeight: 500, color: '#fff' }}>{scan.target_url}</td>
+                    <td style={{ fontWeight: 500, color: 'var(--text-main)' }}>{scan.target_url}</td>
                     <td>
                       <Badge severity={
                         scan.status === 'completed' ? 'success' : 

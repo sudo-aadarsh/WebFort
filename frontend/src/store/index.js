@@ -41,3 +41,16 @@ export const useScanStore = create((set) => ({
     activeScans: state.activeScans.filter(scan => scan.id !== scanId)
   }))
 }));
+
+export const useThemeStore = create((set) => ({
+  theme: localStorage.getItem('webfort_theme') || 'light',
+  toggleTheme: () => set((state) => {
+    const newTheme = state.theme === 'light' ? 'dark' : 'light';
+    localStorage.setItem('webfort_theme', newTheme);
+    return { theme: newTheme };
+  }),
+  setTheme: (theme) => {
+    localStorage.setItem('webfort_theme', theme);
+    set({ theme });
+  }
+}));

@@ -79,14 +79,14 @@ export const Vulnerabilities = () => {
           </div>
         ) : vulnerabilities.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '4rem 0', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-            <div style={{ width: '64px', height: '64px', borderRadius: '50%', background: 'rgba(16, 185, 129, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '1rem' }}>
-              <ShieldCheck style={{ color: 'var(--success)' }} size={32} />
+            <div style={{ width: '48px', height: '48px', borderRadius: '50%', background: 'rgba(16, 185, 129, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '1rem' }}>
+              <ShieldCheck style={{ color: 'var(--success)' }} size={24} />
             </div>
-            <h3 style={{ fontSize: '1.25rem', fontWeight: 500, color: '#fff', marginBottom: '0.5rem' }}>No Vulnerabilities Found</h3>
-            <p style={{ color: 'var(--text-muted)' }}>This scan completed without finding any security issues.</p>
+            <h3 style={{ fontSize: '1.125rem', fontWeight: 500, color: 'var(--text-main)', marginBottom: '0.5rem' }}>No Vulnerabilities Found</h3>
+            <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem' }}>This scan completed without finding any security issues.</p>
           </div>
         ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
             {vulnerabilities.map((vuln) => (
               <div 
                 key={vuln.id} 
@@ -94,25 +94,25 @@ export const Vulnerabilities = () => {
                   border: '1px solid',
                   borderRadius: 'var(--radius)',
                   transition: 'var(--transition)',
-                  background: expandedId === vuln.id ? 'rgba(0,0,0,0.4)' : 'rgba(0,0,0,0.2)',
+                  background: expandedId === vuln.id ? 'var(--bg-hover)' : 'transparent',
                   borderColor: expandedId === vuln.id ? `var(--${vuln.severity})` : 'var(--border)',
                   boxShadow: expandedId === vuln.id ? `0 0 15px rgba(var(--${vuln.severity}-rgb), 0.2)` : 'none'
                 }}
               >
                 {/* Header (Clickable) */}
                 <div 
-                  style={{ padding: '1.25rem', cursor: 'pointer', display: 'flex', alignItems: 'flex-start', gap: '1rem' }}
+                  style={{ padding: '0.75rem 1rem', cursor: 'pointer', display: 'flex', alignItems: 'flex-start', gap: '0.75rem' }}
                   onClick={() => setExpandedId(expandedId === vuln.id ? null : vuln.id)}
                 >
-                  <div style={{ marginTop: '0.25rem', padding: '0.5rem', borderRadius: '0.5rem', background: `rgba(var(--${vuln.severity}-rgb, 255, 255, 255), 0.1)`, color: `var(--${vuln.severity})` }}>
-                    <ShieldAlert size={20} />
+                  <div style={{ padding: '0.375rem', borderRadius: '0.5rem', background: `rgba(var(--${vuln.severity}-rgb, 255, 255, 255), 0.1)`, color: `var(--${vuln.severity})` }}>
+                    <ShieldAlert size={18} />
                   </div>
                   <div style={{ flex: 1 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.25rem' }}>
-                      <h4 style={{ fontWeight: 600, color: '#fff', fontSize: '1.125rem' }}>{vuln.title}</h4>
+                      <h4 style={{ fontWeight: 600, color: 'var(--text-main)', fontSize: '1rem' }}>{vuln.title}</h4>
                       <Badge severity={vuln.severity}>{vuln.severity}</Badge>
                       {vuln.cvss_score > 0 && (
-                        <span style={{ fontSize: '0.75rem', fontFamily: 'monospace', background: 'rgba(255,255,255,0.1)', padding: '2px 8px', borderRadius: '4px', color: '#fff' }}>
+                        <span style={{ fontSize: '0.75rem', fontFamily: 'monospace', background: 'var(--bg-hover)', padding: '2px 8px', borderRadius: '4px', color: 'var(--text-main)' }}>
                           CVSS: {vuln.cvss_score}
                         </span>
                       )}
@@ -126,17 +126,17 @@ export const Vulnerabilities = () => {
 
                 {/* Expanded Content */}
                 {expandedId === vuln.id && (
-                  <div className="animate-fade-in" style={{ padding: '0 1.25rem 1.25rem 1.25rem', borderTop: '1px solid var(--border)' }}>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '2rem', marginTop: '1.25rem' }}>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+                  <div className="animate-fade-in" style={{ padding: '0 1rem 1rem 1rem', borderTop: '1px solid var(--border)' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1.5rem', marginTop: '1rem' }}>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                         <div>
-                          <h5 style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-muted)', marginBottom: '0.5rem', fontWeight: 600 }}>Description</h5>
-                          <p style={{ fontSize: '0.875rem', color: '#cbd5e1', lineHeight: 1.6 }}>{vuln.description}</p>
+                          <h5 style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-muted)', marginBottom: '0.25rem', fontWeight: 600 }}>Description</h5>
+                          <p style={{ fontSize: '0.875rem', color: 'var(--text-main)', lineHeight: 1.6 }}>{vuln.description}</p>
                         </div>
                         
                         {vuln.url && (
                           <div>
-                            <h5 style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-muted)', marginBottom: '0.5rem', fontWeight: 600 }}>Affected URL</h5>
+                            <h5 style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-muted)', marginBottom: '0.25rem', fontWeight: 600 }}>Affected URL</h5>
                             <a href={vuln.url} target="_blank" rel="noreferrer" style={{ fontSize: '0.875rem', color: 'var(--primary)', display: 'flex', alignItems: 'center', gap: '0.25rem', wordBreak: 'break-all', textDecoration: 'none' }}>
                               {vuln.url} <ExternalLink size={12} />
                             </a>
@@ -145,25 +145,25 @@ export const Vulnerabilities = () => {
 
                         {vuln.evidence && (
                           <div>
-                            <h5 style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-muted)', marginBottom: '0.5rem', fontWeight: 600 }}>Evidence</h5>
-                            <div style={{ background: 'var(--bg-dark)', borderRadius: '0.375rem', padding: '0.75rem', border: '1px solid var(--border)' }}>
+                            <h5 style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-muted)', marginBottom: '0.25rem', fontWeight: 600 }}>Evidence</h5>
+                            <div style={{ background: 'var(--bg-hover)', borderRadius: '0.375rem', padding: '0.75rem', border: '1px solid var(--border)' }}>
                               <code style={{ fontSize: '0.75rem', color: 'var(--info)', wordBreak: 'break-all' }}>{vuln.evidence}</code>
                             </div>
                           </div>
                         )}
                       </div>
 
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                         <div style={{ background: 'rgba(16, 185, 129, 0.05)', border: '1px solid rgba(16, 185, 129, 0.2)', borderRadius: '0.5rem', padding: '1rem' }}>
                           <h5 style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--success)', marginBottom: '0.5rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                             <ShieldCheck size={14} /> Remediation
                           </h5>
-                          <p style={{ fontSize: '0.875rem', color: '#cbd5e1', lineHeight: 1.6 }}>{vuln.remediation}</p>
+                          <p style={{ fontSize: '0.875rem', color: 'var(--text-main)', lineHeight: 1.6 }}>{vuln.remediation}</p>
                         </div>
 
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                           {vuln.cwe_id && (
-                            <div style={{ background: 'rgba(255,255,255,0.05)', borderRadius: '0.5rem', padding: '0.75rem' }}>
+                            <div style={{ background: 'var(--bg-hover)', borderRadius: '0.5rem', padding: '0.75rem' }}>
                               <span style={{ display: 'block', fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '0.25rem' }}>CWE Reference</span>
                               <a href={`https://cwe.mitre.org/data/definitions/${vuln.cwe_id.replace('CWE-','')}.html`} target="_blank" rel="noreferrer" style={{ fontSize: '0.875rem', fontFamily: 'monospace', color: 'var(--primary)', textDecoration: 'none' }}>
                                 {vuln.cwe_id}
@@ -171,9 +171,9 @@ export const Vulnerabilities = () => {
                             </div>
                           )}
                           {vuln.owasp_category && (
-                            <div style={{ background: 'rgba(255,255,255,0.05)', borderRadius: '0.5rem', padding: '0.75rem' }}>
+                            <div style={{ background: 'var(--bg-hover)', borderRadius: '0.5rem', padding: '0.75rem' }}>
                               <span style={{ display: 'block', fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '0.25rem' }}>OWASP Category</span>
-                              <span style={{ fontSize: '0.875rem', color: '#fff' }}>{vuln.owasp_category}</span>
+                              <span style={{ fontSize: '0.875rem', color: 'var(--text-main)' }}>{vuln.owasp_category}</span>
                             </div>
                           )}
                         </div>

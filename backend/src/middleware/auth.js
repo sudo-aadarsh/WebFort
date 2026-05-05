@@ -6,6 +6,8 @@ export function authenticate(req, res, next) {
   
   // Check for API key
   const apiKey = req.headers['x-api-key'];
+  const queryToken = req.query.token;
+
   if (apiKey) {
     const user = db.prepare('SELECT u.* FROM users u JOIN api_keys ak ON u.id = ak.user_id WHERE ak.key_hash = ?').get(apiKey);
     if (user) {
@@ -16,11 +18,16 @@ export function authenticate(req, res, next) {
     return res.status(401).json({ error: 'Invalid API key' });
   }
 
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    return res.status(401).json({ error: 'Authentication required' });
+  let token;
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    token = authHeader.split(' ')[1];
+  } else if (queryToken) {
+    token = queryToken;
   }
 
-  const token = authHeader.split(' ')[1];
+  if (!token) {
+    return res.status(401).json({ error: 'Authentication required' });
+  }
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);

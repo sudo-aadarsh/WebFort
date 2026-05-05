@@ -1,14 +1,15 @@
 import React from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
-import { useAuthStore } from '../../store';
+import { useAuthStore, useThemeStore } from '../../store';
 import { 
   ShieldAlert, LayoutDashboard, Search, FileText, 
-  AlertTriangle, Settings, LogOut, Bell
+  AlertTriangle, Settings, LogOut, Bell, Sun, Moon
 } from 'lucide-react';
 
 export const Sidebar = () => {
   const { user } = useAuthStore();
   const isAdmin = user?.role === 'admin';
+  const navigate = useNavigate();
 
   const navItems = [
     { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
@@ -47,12 +48,16 @@ export const Sidebar = () => {
       </div>
 
       <div className="sidebar-footer">
-        <div className="glass-panel user-profile">
+        <div 
+          className="glass-panel user-profile"
+          onClick={() => navigate('/settings', { state: { tab: 'profile' } })}
+          style={{ cursor: 'pointer' }}
+        >
           <div className="user-avatar">
             {user?.name?.charAt(0) || 'U'}
           </div>
           <div style={{ overflow: 'hidden' }}>
-            <div style={{ fontWeight: 500, color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{user?.name}</div>
+            <div style={{ fontWeight: 500, color: 'var(--text-main)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{user?.name}</div>
             <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{user?.role}</div>
           </div>
         </div>
@@ -63,6 +68,7 @@ export const Sidebar = () => {
 
 export const Navbar = () => {
   const { logout } = useAuthStore();
+  const { theme, toggleTheme } = useThemeStore();
   const navigate = useNavigate();
 
   const handleLogout = () => {
@@ -82,7 +88,17 @@ export const Navbar = () => {
       </div>
 
       <div className="nav-actions">
-        <button className="icon-btn">
+        <button 
+          onClick={toggleTheme}
+          className="icon-btn"
+          title={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}
+        >
+          {theme === 'light' ? <Moon size={20} /> : <Sun size={20} />}
+        </button>
+        <button 
+          className="icon-btn"
+          onClick={() => navigate('/settings', { state: { tab: 'notifications' } })}
+        >
           <Bell size={20} />
           <span style={{ position: 'absolute', top: '4px', right: '4px', width: '8px', height: '8px', background: 'var(--critical)', borderRadius: '50%' }}></span>
         </button>
