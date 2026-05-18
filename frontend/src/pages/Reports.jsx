@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Download, FileText, FileSpreadsheet, FileJson } from 'lucide-react';
-import api from '../services/api';
+import { ArrowLeft, Download, FileText, FileSpreadsheet, FileJson, Eye, Trash2 } from 'lucide-react';
+import api, { API_BASE_URL } from '../services/api';
 import { Card, Button, Badge } from '../components/common';
 
 export const Reports = () => {
@@ -31,7 +31,19 @@ export const Reports = () => {
   };
 
   const downloadReport = (scanId, format) => {
-    window.open(`http://localhost:3001/api/reports/${scanId}/${format}?token=${localStorage.getItem('webfort_token')}`, '_blank');
+    window.open(`${API_BASE_URL}/api/reports/${scanId}/${format}?token=${localStorage.getItem('websecure_token')}`, '_blank');
+  };
+
+  const handleDelete = async (scanId) => {
+    if (!window.confirm('Are you sure you want to delete this report? This will also delete the associated scan history and vulnerabilities.')) {
+      return;
+    }
+    try {
+      await api.delete(`/scans/${scanId}`);
+      fetchReports();
+    } catch (err) {
+      console.error('Failed to delete report:', err);
+    }
   };
 
   return (
@@ -60,7 +72,18 @@ export const Reports = () => {
         ) : (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '1.5rem' }}>
             {displayedReports.map((report) => (
-              <div key={report.id} className="glass-panel" style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', height: '100%' }}>
+              <div 
+                key={report.id} 
+                className="panel hover-lift" 
+                onClick={() => navigate(`/reports/${report.id}`)}
+                style={{ 
+                  padding: '1.25rem', 
+                  display: 'flex', 
+                  flexDirection: 'column', 
+                  height: '100%',
+                  cursor: 'pointer'
+                }}
+              >
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
                   <div style={{ overflow: 'hidden' }}>
                     <h3 style={{ fontWeight: 600, color: 'var(--text-main)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '200px' }} title={report.target_url}>
@@ -93,18 +116,26 @@ export const Reports = () => {
                   </div>
                 </div>
 
-                <div style={{ marginTop: 'auto', display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.5rem' }}>
-                  <Button variant="secondary" style={{ padding: '0.5rem', fontSize: '0.75rem', display: 'flex', flexDirection: 'column', gap: '0.25rem' }} onClick={() => downloadReport(report.id, 'pdf')}>
+                <div style={{ marginTop: 'auto', display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '0.5rem' }}>
+                  <Button variant="primary" style={{ padding: '0.5rem', fontSize: '0.75rem', display: 'flex', flexDirection: 'column', gap: '0.25rem' }} onClick={(e) => { e.stopPropagation(); navigate(`/reports/${report.id}`); }}>
+                    <Eye size={16} color="white" />
+                    <span>View</span>
+                  </Button>
+                  <Button variant="secondary" style={{ padding: '0.5rem', fontSize: '0.75rem', display: 'flex', flexDirection: 'column', gap: '0.25rem' }} onClick={(e) => { e.stopPropagation(); downloadReport(report.id, 'pdf'); }}>
                     <FileText size={16} style={{ color: 'var(--primary)' }} />
                     <span>PDF</span>
                   </Button>
-                  <Button variant="secondary" style={{ padding: '0.5rem', fontSize: '0.75rem', display: 'flex', flexDirection: 'column', gap: '0.25rem' }} onClick={() => downloadReport(report.id, 'csv')}>
+                  <Button variant="secondary" style={{ padding: '0.5rem', fontSize: '0.75rem', display: 'flex', flexDirection: 'column', gap: '0.25rem' }} onClick={(e) => { e.stopPropagation(); downloadReport(report.id, 'csv'); }}>
                     <FileSpreadsheet size={16} style={{ color: 'var(--success)' }} />
                     <span>CSV</span>
                   </Button>
-                  <Button variant="secondary" style={{ padding: '0.5rem', fontSize: '0.75rem', display: 'flex', flexDirection: 'column', gap: '0.25rem' }} onClick={() => downloadReport(report.id, 'sarif')}>
+                  <Button variant="secondary" style={{ padding: '0.5rem', fontSize: '0.75rem', display: 'flex', flexDirection: 'column', gap: '0.25rem' }} onClick={(e) => { e.stopPropagation(); downloadReport(report.id, 'sarif'); }}>
                     <FileJson size={16} style={{ color: 'var(--medium)' }} />
                     <span>SARIF</span>
+                  </Button>
+                  <Button variant="secondary" style={{ padding: '0.5rem', fontSize: '0.75rem', display: 'flex', flexDirection: 'column', gap: '0.25rem', color: 'var(--critical)', borderColor: 'rgba(239,68,68,0.3)', background: 'rgba(239,68,68,0.05)' }} onClick={(e) => { e.stopPropagation(); handleDelete(report.id); }}>
+                    <Trash2 size={16} style={{ color: 'var(--critical)' }} />
+                    <span>Delete</span>
                   </Button>
                 </div>
               </div>

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ShieldAlert, ExternalLink, ShieldCheck } from 'lucide-react';
+import { ShieldAlert, ExternalLink, ShieldCheck, ChevronUp, ChevronDown } from 'lucide-react';
 import api from '../services/api';
 import { Card, Badge, Button } from '../components/common';
 
@@ -90,37 +90,42 @@ export const Vulnerabilities = () => {
             {vulnerabilities.map((vuln) => (
               <div 
                 key={vuln.id} 
+                className="animate-fade-in hover-lift"
                 style={{
-                  border: '1px solid',
+                  border: '1px solid var(--border)',
                   borderRadius: 'var(--radius)',
                   transition: 'var(--transition)',
-                  background: expandedId === vuln.id ? 'var(--bg-hover)' : 'transparent',
-                  borderColor: expandedId === vuln.id ? `var(--${vuln.severity})` : 'var(--border)',
-                  boxShadow: expandedId === vuln.id ? `0 0 15px rgba(var(--${vuln.severity}-rgb), 0.2)` : 'none'
+                  background: expandedId === vuln.id ? 'var(--bg-hover)' : 'var(--bg-card)',
+                  overflow: 'hidden'
                 }}
               >
                 {/* Header (Clickable) */}
                 <div 
-                  style={{ padding: '0.75rem 1rem', cursor: 'pointer', display: 'flex', alignItems: 'flex-start', gap: '0.75rem' }}
+                  style={{ 
+                    padding: '1rem 1.25rem', 
+                    cursor: 'pointer', 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    gap: '1rem',
+                    borderLeft: `4px solid var(--${vuln.severity})`
+                  }}
                   onClick={() => setExpandedId(expandedId === vuln.id ? null : vuln.id)}
                 >
-                  <div style={{ padding: '0.375rem', borderRadius: '0.5rem', background: `rgba(var(--${vuln.severity}-rgb, 255, 255, 255), 0.1)`, color: `var(--${vuln.severity})` }}>
-                    <ShieldAlert size={18} />
+                  <div style={{ padding: '0.5rem', borderRadius: '10px', background: `rgba(var(--${vuln.severity}-rgb), 0.1)`, color: `var(--${vuln.severity})` }}>
+                    <ShieldAlert size={20} />
                   </div>
                   <div style={{ flex: 1 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.25rem' }}>
-                      <h4 style={{ fontWeight: 600, color: 'var(--text-main)', fontSize: '1rem' }}>{vuln.title}</h4>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.125rem' }}>
+                      <h4 style={{ fontWeight: 700, color: 'var(--text-main)', fontSize: '1rem' }}>{vuln.title}</h4>
                       <Badge severity={vuln.severity}>{vuln.severity}</Badge>
-                      {vuln.cvss_score > 0 && (
-                        <span style={{ fontSize: '0.75rem', fontFamily: 'monospace', background: 'var(--bg-hover)', padding: '2px 8px', borderRadius: '4px', color: 'var(--text-main)' }}>
-                          CVSS: {vuln.cvss_score}
-                        </span>
-                      )}
                     </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', fontSize: '0.875rem', color: 'var(--text-muted)' }}>
-                      <span><span style={{ opacity: 0.7 }}>Type:</span> {vuln.type}</span>
-                      {vuln.parameter && <span><span style={{ opacity: 0.7 }}>Parameter:</span> <code style={{ color: 'var(--primary)' }}>{vuln.parameter}</code></span>}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                      <span>TYPE: <span style={{ color: 'var(--text-main)', fontWeight: 600 }}>{vuln.type}</span></span>
+                      {vuln.parameter && <span>PARAM: <code style={{ color: 'var(--primary)', fontWeight: 700 }}>{vuln.parameter}</code></span>}
                     </div>
+                  </div>
+                  <div style={{ color: 'var(--text-muted)' }}>
+                    {expandedId === vuln.id ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
                   </div>
                 </div>
 

@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { 
   ShieldAlert, Activity, AlertTriangle, Search, 
-  ArrowUpRight, ArrowDownRight, Clock
+  ArrowUpRight, ArrowDownRight, Clock, Eye
 } from 'lucide-react';
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer,
@@ -9,7 +10,7 @@ import {
 } from 'recharts';
 import api from '../services/api';
 import { Card, StatsCard, Badge } from '../components/common';
-import { useWebSocket } from '../hooks/useWebSocket';
+import { useScanStore } from '../store';
 
 const SEVERITY_COLORS = {
   critical: '#ef4444',
@@ -22,7 +23,8 @@ const SEVERITY_COLORS = {
 export const Dashboard = () => {
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
-  useWebSocket(); // Initialize websocket for real-time updates
+  const [error, setError] = useState(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     fetchStats();
@@ -34,15 +36,42 @@ export const Dashboard = () => {
       setStats(response.data);
     } catch (error) {
       console.error('Failed to fetch stats:', error);
+      setError('Failed to load dashboard data. Please try again later.');
     } finally {
       setLoading(false);
     }
   };
 
-  if (loading || !stats) {
+  // Sync with real-time updates from WebSocket (via ScanStore)
+  const { activeScans } = useScanStore();
+  
+  useEffect(() => {
+    if (stats) {
+      // If an active scan matches a recent scan, update its progress in the local dashboard state
+      const updatedRecentScans = stats.recentScans.map(recent => {
+        const active = activeScans.find(a => a.id === recent.id);
+        return active ? { ...recent, progress: active.progress, status: active.status } : recent;
+      });
+      
+      if (JSON.stringify(updatedRecentScans) !== JSON.stringify(stats.recentScans)) {
+        setStats({ ...stats, recentScans: updatedRecentScans });
+      }
+    }
+  }, [activeScans, stats]);
+
+  if (loading) {
     return (
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
         <div style={{ border: '2px solid var(--primary)', borderRadius: '50%', borderTopColor: 'transparent', width: '3rem', height: '3rem', animation: 'spin 1s linear infinite' }}></div>
+      </div>
+    );
+  }
+
+  if (error || !stats) {
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', gap: '1rem' }}>
+        <div style={{ color: 'var(--critical)', fontWeight: 600 }}>{error || 'No stats data available'}</div>
+        <button className="btn btn-secondary" onClick={fetchStats}>Retry</button>
       </div>
     );
   }
@@ -93,20 +122,20 @@ export const Dashboard = () => {
 
       <div className="charts-grid">
         {/* Main Chart */}
-        <div className="glass-card chart-card">
-          <h3 className="chart-title">Top Vulnerability Types</h3>
-          <div className="chart-container">
+        <div className="card chart-card animate-fade-in" style={{ padding: '1.25rem' }}>
+          <h3 className="chart-title" style={{ fontSize: '1.125rem', marginBottom: '1rem' }}>Top Vulnerability Types</h3>
+          <div className="chart-container" style={{ minHeight: '180px' }}>
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={stats.vulnerabilityTypes} layout="vertical" margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+              <BarChart data={stats.vulnerabilityTypes} layout="vertical" margin={{ top: 5, right: 30, left: 10, bottom: 5 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" horizontal={true} vertical={false} />
-                <XAxis type="number" stroke="var(--border)" tick={{ fill: 'var(--text-muted)', fontSize: 12 }} />
-                <YAxis dataKey="type" type="category" width={150} stroke="var(--border)" tick={{ fill: 'var(--text-main)', fontSize: 12, fontWeight: 500 }} />
+                <XAxis type="number" stroke="var(--border)" tick={{ fill: 'var(--text-muted)', fontSize: 11 }} />
+                <YAxis dataKey="type" type="category" width={120} stroke="var(--border)" tick={{ fill: 'var(--text-main)', fontSize: 11, fontWeight: 500 }} />
                 <RechartsTooltip 
                   cursor={{ fill: 'var(--bg-hover)' }}
-                  contentStyle={{ backgroundColor: 'var(--bg-base)', border: 'none', borderRadius: '16px', boxShadow: 'var(--shadow-2)', color: 'var(--text-main)' }}
+                  contentStyle={{ backgroundColor: 'var(--bg-base)', border: 'none', borderRadius: '12px', boxShadow: 'var(--shadow-2)', color: 'var(--text-main)' }}
                   itemStyle={{ color: 'var(--text-main)', fontWeight: 600 }}
                 />
-                <Bar dataKey="count" fill="url(#colorGradient)" radius={[0, 16, 16, 0]} barSize={24}>
+                <Bar dataKey="count" fill="url(#colorGradient)" radius={[0, 16, 16, 0]} barSize={16}>
                   {stats.vulnerabilityTypes.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={index % 2 === 0 ? 'var(--primary)' : 'var(--accent)'} />
                   ))}
@@ -123,57 +152,85 @@ export const Dashboard = () => {
         </div>
 
         {/* Severity Distribution */}
-        <div className="glass-card chart-card">
-          <h3 className="chart-title">Severity Distribution</h3>
-          <div className="chart-container" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            {pieData.length > 0 ? (
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={pieData}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={70}
-                    outerRadius={105}
-                    paddingAngle={2}
-                    dataKey="value"
-                    stroke="var(--bg-card)"
-                    strokeWidth={4}
-                  >
-                    {pieData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
-                    ))}
-                  </Pie>
-                  <RechartsTooltip 
-                    contentStyle={{ backgroundColor: 'var(--bg-base)', border: 'none', borderRadius: '16px', boxShadow: 'var(--shadow-2)', color: 'var(--text-main)' }}
-                    itemStyle={{ color: 'var(--text-main)', fontWeight: 600 }}
-                  />
-                </PieChart>
-              </ResponsiveContainer>
-            ) : (
-              <div style={{ color: 'var(--text-muted)' }}>No vulnerabilities found</div>
-            )}
-            {/* Center Text */}
-            <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none' }}>
-              <span style={{ fontSize: '2.5rem', fontWeight: 700, color: 'var(--text-main)', lineHeight: 1 }}>{stats.totalVulnerabilities}</span>
-              <span style={{ fontSize: '0.75rem', letterSpacing: '0.05em', color: 'var(--text-muted)', textTransform: 'uppercase', marginTop: '0.25rem' }}>Total</span>
-            </div>
-          </div>
+        <div className="card chart-card animate-fade-in" style={{ display: 'flex', flexDirection: 'column', padding: '1.25rem' }}>
+          <h3 className="chart-title" style={{ fontSize: '1.125rem', marginBottom: '1rem' }}>Severity Distribution</h3>
           
-          <div style={{ marginTop: '1.5rem', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
-            {pieData.map(item => (
-              <div key={item.name} style={{ display: 'flex', alignItems: 'center', fontSize: '0.875rem' }}>
-                <span style={{ width: '10px', height: '10px', borderRadius: '50%', marginRight: '0.5rem', backgroundColor: item.color }}></span>
-                <span style={{ color: 'var(--text-muted)', flex: 1 }}>{item.name}</span>
-                <span style={{ fontWeight: 500, color: 'var(--text-main)' }}>{item.value}</span>
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between', gap: '0.75rem' }}>
+            {/* Chart Area */}
+            <div className="chart-container" style={{ minHeight: '160px', position: 'relative' }}>
+              {pieData.length > 0 ? (
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={pieData}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius="70%"
+                      outerRadius="95%"
+                      paddingAngle={4}
+                      dataKey="value"
+                      stroke="none"
+                    >
+                      {pieData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.color} />
+                      ))}
+                    </Pie>
+                    <RechartsTooltip 
+                      contentStyle={{ backgroundColor: 'var(--bg-base)', border: 'none', borderRadius: '12px', boxShadow: 'var(--shadow-3)', color: 'var(--text-main)' }}
+                      itemStyle={{ color: 'var(--text-main)', fontWeight: 600 }}
+                    />
+                  </PieChart>
+                </ResponsiveContainer>
+              ) : (
+                <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)' }}>
+                  No vulnerabilities found
+                </div>
+              )}
+              {/* Center Text Overlay */}
+              {pieData.length > 0 && (
+                <div style={{ 
+                  position: 'absolute', 
+                  top: '50%', 
+                  left: '50%', 
+                  transform: 'translate(-50%, -50%)', 
+                  textAlign: 'center', 
+                  pointerEvents: 'none' 
+                }}>
+                  <div style={{ fontSize: '1.75rem', fontWeight: 800, color: 'var(--text-main)', lineHeight: 1 }}>{stats.totalVulnerabilities}</div>
+                  <div style={{ fontSize: '0.6rem', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.1em', marginTop: '0.125rem' }}>Total</div>
+                </div>
+              )}
+            </div>
+            
+            {/* Integrated Legend & Metrics */}
+            <div style={{ 
+              padding: '0.75rem', 
+              background: 'var(--bg-hover)', 
+              borderRadius: '16px',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '0.75rem'
+            }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem 1rem' }}>
+                {pieData.map(item => {
+                  const percentage = ((item.value / stats.totalVulnerabilities) * 100).toFixed(0);
+                  return (
+                    <div key={item.name} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      <div style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: item.color }}></div>
+                      <div style={{ flex: 1, fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 500 }}>{item.name}</div>
+                      <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-main)' }}>{item.value}</div>
+                      <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', opacity: 0.6 }}>{percentage}%</div>
+                    </div>
+                  );
+                })}
               </div>
-            ))}
+            </div>
           </div>
         </div>
       </div>
 
       {/* Recent Scans */}
-      <div className="glass-card table-card">
+      <div className="card table-card animate-fade-in">
         <div className="table-header">
           <h3 className="chart-title" style={{ marginBottom: 0 }}>Recent Scans</h3>
         </div>
@@ -186,16 +243,24 @@ export const Dashboard = () => {
                 <th>Type</th>
                 <th>Vulnerabilities</th>
                 <th>Date</th>
+                <th>Actions</th>
               </tr>
             </thead>
             <tbody>
               {stats.recentScans.length === 0 ? (
                 <tr>
-                  <td colSpan="5" style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>No recent scans found</td>
+                  <td colSpan="6" style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>No recent scans found</td>
                 </tr>
               ) : (
                 stats.recentScans.map(scan => (
-                  <tr key={scan.id}>
+                  <tr 
+                    key={scan.id}
+                    onClick={() => scan.status === 'completed' && navigate(`/reports/${scan.id}`)}
+                    style={{ 
+                      cursor: scan.status === 'completed' ? 'pointer' : 'default',
+                      transition: 'background-color 0.2s'
+                    }}
+                  >
                     <td style={{ fontWeight: 500, color: 'var(--text-main)' }}>{scan.target_url}</td>
                     <td>
                       <Badge severity={
@@ -222,6 +287,16 @@ export const Dashboard = () => {
                     <td style={{ color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                       <Clock size={14} />
                       {new Date(scan.created_at).toLocaleDateString()}
+                    </td>
+                    <td>
+                      {scan.status === 'completed' && (
+                        <button 
+                          onClick={(e) => { e.stopPropagation(); navigate(`/reports/${scan.id}`); }}
+                          style={{ background: 'none', border: 'none', color: 'var(--primary)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.875rem' }}
+                        >
+                          <Eye size={14} /> View
+                        </button>
+                      )}
                     </td>
                   </tr>
                 ))

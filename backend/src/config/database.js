@@ -1,93 +1,102 @@
-import initSqlJs from 'sql.js';
+import pkg from 'pg';
+const { Pool } = pkg;
 import fs from 'fs';
 import path from 'path';
-import { fileURLToPath } from 'url';
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const dbPath = process.env.DB_PATH || path.join(__dirname, '../../webfort.db');
+// Load environment variables if needed
+import dotenv from 'dotenv';
+dotenv.config();
 
-let db;
+const pool = new Pool({
+  host: process.env.DB_HOST || 'localhost',
+  user: process.env.DB_USER || 'websecure_user',
+  password: process.env.DB_PASSWORD || 'websecure_password',
+  database: process.env.DB_NAME || 'websecure_db',
+  port: process.env.DB_PORT || 5432
+});
 
-export async function getDb() {
-  if (db) return db;
-  const SQL = await initSqlJs();
-  
-  if (fs.existsSync(dbPath)) {
-    const buffer = fs.readFileSync(dbPath);
-    db = new SQL.Database(buffer);
-  } else {
-    db = new SQL.Database();
-  }
-  return db;
+function convertSql(sql) {
+  let i = 1;
+  return sql.replace(/\?/g, () => `$${i++}`);
 }
 
-export function saveDb() {
-  if (!db) return;
-  const data = db.export();
-  const buffer = Buffer.from(data);
-  fs.writeFileSync(dbPath, buffer);
-}
-
-// Auto-save periodically
-setInterval(saveDb, 5000);
-
-// Helper to mimic better-sqlite3 API
 export const dbHelper = {
   prepare(sql) {
+    const pgSql = convertSql(sql);
     return {
-      run: (...params) => {
-        db.run(sql, params);
-        saveDb();
-      },
-      get: (...params) => {
-        const stmt = db.prepare(sql);
-        stmt.bind(params);
-        let row = undefined;
-        if (stmt.step()) {
-          row = stmt.getAsObject();
+      run: async (...params) => {
+        try {
+          await pool.query(pgSql, params);
+        } catch (err) {
+          console.error("DB Run Error:", err.message, "SQL:", pgSql);
+          throw err;
         }
-        stmt.free();
-        return row;
       },
-      all: (...params) => {
-        const results = [];
-        const stmt = db.prepare(sql);
-        stmt.bind(params);
-        while (stmt.step()) {
-          results.push(stmt.getAsObject());
+      get: async (...params) => {
+        try {
+          const res = await pool.query(pgSql, params);
+          return res.rows[0];
+        } catch (err) {
+          console.error("DB Get Error:", err.message, "SQL:", pgSql);
+          throw err;
         }
-        stmt.free();
-        return results;
+      },
+      all: async (...params) => {
+        try {
+          const res = await pool.query(pgSql, params);
+          return res.rows;
+        } catch (err) {
+          console.error("DB All Error:", err.message, "SQL:", pgSql);
+          throw err;
+        }
       }
     };
   }
 };
 
+export async function getDb() {
+  return pool;
+}
+
 export async function initializeDatabase() {
-  await getDb();
+  // Creating tables for Multi-Tenant Architecture
   
-  db.run(`
-    CREATE TABLE IF NOT EXISTS users (
-      id TEXT PRIMARY KEY,
-      email TEXT UNIQUE NOT NULL,
-      password TEXT NOT NULL,
-      name TEXT NOT NULL,
-      role TEXT DEFAULT 'user',
-      company TEXT,
-      mfa_enabled INTEGER DEFAULT 0,
-      api_key TEXT UNIQUE,
-      created_at TEXT DEFAULT (datetime('now')),
-      updated_at TEXT DEFAULT (datetime('now'))
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS tenants (
+      id UUID PRIMARY KEY,
+      name VARCHAR(255) NOT NULL,
+      domain VARCHAR(255),
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )
   `);
 
-  db.run(`
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS users (
+      id UUID PRIMARY KEY,
+      tenant_id UUID REFERENCES tenants(id),
+      email VARCHAR(255) UNIQUE NOT NULL,
+      password VARCHAR(255) NOT NULL,
+      name VARCHAR(255) NOT NULL,
+      role VARCHAR(50) DEFAULT 'user',
+      company VARCHAR(255),
+      job_title VARCHAR(255),
+      avatar_url TEXT,
+      mfa_enabled BOOLEAN DEFAULT FALSE,
+      mfa_secret VARCHAR(255),
+      api_key VARCHAR(255) UNIQUE,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+
+  await pool.query(`
     CREATE TABLE IF NOT EXISTS scans (
-      id TEXT PRIMARY KEY,
-      user_id TEXT NOT NULL,
-      target_url TEXT NOT NULL,
-      scan_type TEXT DEFAULT 'full',
-      status TEXT DEFAULT 'queued',
+      id UUID PRIMARY KEY,
+      tenant_id UUID REFERENCES tenants(id),
+      user_id UUID REFERENCES users(id),
+      target_url VARCHAR(255) NOT NULL,
+      scan_type VARCHAR(50) DEFAULT 'full',
+      status VARCHAR(50) DEFAULT 'queued',
       progress INTEGER DEFAULT 0,
       total_vulnerabilities INTEGER DEFAULT 0,
       critical_count INTEGER DEFAULT 0,
@@ -97,61 +106,89 @@ export async function initializeDatabase() {
       info_count INTEGER DEFAULT 0,
       pages_scanned INTEGER DEFAULT 0,
       scan_depth INTEGER DEFAULT 3,
-      started_at TEXT,
-      completed_at TEXT,
-      created_at TEXT DEFAULT (datetime('now')),
-      FOREIGN KEY (user_id) REFERENCES users(id)
+      started_at TIMESTAMP,
+      completed_at TIMESTAMP,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )
   `);
 
-  db.run(`
+  await pool.query(`
     CREATE TABLE IF NOT EXISTS vulnerabilities (
-      id TEXT PRIMARY KEY,
-      scan_id TEXT NOT NULL,
-      type TEXT NOT NULL,
-      severity TEXT NOT NULL,
-      title TEXT NOT NULL,
+      id UUID PRIMARY KEY,
+      tenant_id UUID REFERENCES tenants(id),
+      scan_id UUID REFERENCES scans(id),
+      type VARCHAR(255) NOT NULL,
+      severity VARCHAR(50) NOT NULL,
+      title VARCHAR(255) NOT NULL,
       description TEXT,
       url TEXT,
-      parameter TEXT,
+      parameter VARCHAR(255),
       evidence TEXT,
       remediation TEXT,
       cvss_score REAL DEFAULT 0,
-      cwe_id TEXT,
-      owasp_category TEXT,
-      is_false_positive INTEGER DEFAULT 0,
-      created_at TEXT DEFAULT (datetime('now')),
-      FOREIGN KEY (scan_id) REFERENCES scans(id)
+      cwe_id VARCHAR(50),
+      owasp_category VARCHAR(100),
+      is_false_positive BOOLEAN DEFAULT FALSE,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )
   `);
 
-  db.run(`
+  await pool.query(`
     CREATE TABLE IF NOT EXISTS alert_configs (
-      id TEXT PRIMARY KEY,
-      user_id TEXT NOT NULL,
-      channel TEXT NOT NULL,
-      endpoint TEXT NOT NULL,
-      min_severity TEXT DEFAULT 'high',
-      enabled INTEGER DEFAULT 1,
-      created_at TEXT DEFAULT (datetime('now')),
-      FOREIGN KEY (user_id) REFERENCES users(id)
+      id UUID PRIMARY KEY,
+      tenant_id UUID REFERENCES tenants(id),
+      user_id UUID REFERENCES users(id),
+      channel VARCHAR(50) NOT NULL,
+      endpoint VARCHAR(255) NOT NULL,
+      min_severity VARCHAR(50) DEFAULT 'high',
+      enabled BOOLEAN DEFAULT TRUE,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )
   `);
 
-  db.run(`
+  await pool.query(`
     CREATE TABLE IF NOT EXISTS api_keys (
-      id TEXT PRIMARY KEY,
-      user_id TEXT NOT NULL,
-      name TEXT NOT NULL,
-      key_hash TEXT NOT NULL,
-      last_used TEXT,
-      created_at TEXT DEFAULT (datetime('now')),
-      FOREIGN KEY (user_id) REFERENCES users(id)
+      id UUID PRIMARY KEY,
+      tenant_id UUID REFERENCES tenants(id),
+      user_id UUID REFERENCES users(id),
+      name VARCHAR(255) NOT NULL,
+      key_hash VARCHAR(255) NOT NULL,
+      last_used TIMESTAMP,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )
   `);
 
-  saveDb();
-  console.log('✓ Database initialized');
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS audit_logs (
+      id UUID PRIMARY KEY,
+      user_id UUID REFERENCES users(id) ON DELETE SET NULL,
+      tenant_id UUID REFERENCES tenants(id) ON DELETE SET NULL,
+      action VARCHAR(255) NOT NULL,
+      resource VARCHAR(255),
+      status_code INTEGER,
+      ip_address VARCHAR(64),
+      user_agent TEXT,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+
+  // Index for fast audit trail lookups
+  await pool.query(`
+    CREATE INDEX IF NOT EXISTS idx_audit_logs_user_id ON audit_logs(user_id);
+  `);
+  await pool.query(`
+    CREATE INDEX IF NOT EXISTS idx_audit_logs_created_at ON audit_logs(created_at);
+  `);
+
+  // Migrations for existing tables
+  try {
+    await pool.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS job_title VARCHAR(255)');
+    await pool.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar_url TEXT');
+  } catch (err) {
+    console.error('Migration error:', err.message);
+  }
+
+  console.log('✓ PostgreSQL Database initialized with Multi-Tenancy support');
 }
 
 export default dbHelper;

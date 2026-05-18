@@ -7,19 +7,20 @@ import { ScanEngine } from '../../core/engine.js';
 const router = Router();
 
 // Trigger scan from CI/CD (uses API key auth)
-router.post('/cicd/trigger', authenticate, (req, res) => {
+router.post('/cicd/trigger', authenticate, async (req, res) => {
   const { targetUrl, scanType = 'quick', scanDepth = 2, waitForResults = false } = req.body;
+  const tenantId = req.tenant?.id || req.user?.tenant_id || null;
 
   if (!targetUrl) {
     return res.status(400).json({ error: 'Target URL is required' });
   }
 
   const id = uuidv4();
-  db.prepare(
-    'INSERT INTO scans (id, user_id, target_url, scan_type, scan_depth) VALUES (?, ?, ?, ?, ?)'
-  ).run(id, req.user.id, targetUrl, scanType, scanDepth);
+  await db.prepare(
+    'INSERT INTO scans (id, tenant_id, user_id, target_url, scan_type, scan_depth) VALUES (?, ?, ?, ?, ?, ?)'
+  ).run(id, tenantId, req.user.id, targetUrl, scanType, scanDepth);
 
-  ScanEngine.startScan(id, targetUrl, scanType, scanDepth);
+  ScanEngine.startScan(id, targetUrl, scanType, scanDepth, tenantId);
 
   res.status(201).json({
     scanId: id,
@@ -29,8 +30,9 @@ router.post('/cicd/trigger', authenticate, (req, res) => {
 });
 
 // Check scan status (for CI/CD polling)
-router.get('/cicd/status/:scanId', authenticate, (req, res) => {
-  const scan = db.prepare('SELECT * FROM scans WHERE id = ? AND user_id = ?').get(req.params.scanId, req.user.id);
+router.get('/cicd/status/:scanId', authenticate, async (req, res) => {
+  const tenantId = req.tenant?.id || req.user?.tenant_id || null;
+  const scan = await db.prepare('SELECT * FROM scans WHERE id = ? AND user_id = ? AND tenant_id IS NOT DISTINCT FROM ?').get(req.params.scanId, req.user.id, tenantId);
   
   if (!scan) {
     return res.status(404).json({ error: 'Scan not found' });
@@ -59,7 +61,7 @@ router.get('/cicd/status/:scanId', authenticate, (req, res) => {
 });
 
 // GitHub webhook handler
-router.post('/webhooks/github', (req, res) => {
+router.post('/webhooks/github', async (req, res) => {
   const event = req.headers['x-github-event'];
   const payload = req.body;
 

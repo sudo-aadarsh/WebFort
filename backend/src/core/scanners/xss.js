@@ -13,6 +13,10 @@ const XSS_PAYLOADS = [
   '${alert(1)}',
   '<iframe src="javascript:alert(1)">',
   '<details open ontoggle=alert(1)>',
+  'jaVasCript:/*-/*`/*\\"/*\'/*"/**/(/* */oNcliCk=alert(1) )//',
+  '<math><mtext><option><annotation><iframe src="javascript:alert(1)">',
+  '<img src=x onerror=confirm(1)>',
+  '<svg><animatetransform onbegin=alert(1)>',
 ];
 
 const REFLECTED_MARKER = 'WEBFORT_XSS_PROBE_';

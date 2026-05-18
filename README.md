@@ -1,88 +1,83 @@
-# WebFort 🛡️
+# 🛡️ WebSecure Vulnerability Scanner
 
-**Enterprise-grade web vulnerability scanner.**
+WebSecure is an enterprise-grade, cloud-native, multi-tenant Dynamic Application Security Testing (DAST) SaaS platform. Built with scalability and security in mind, WebSecure automates vulnerability discovery, false-positive filtering using AI, and seamless CI/CD integration.
 
-WebFort is a comprehensive, full-stack web vulnerability scanning engine designed to identify and analyze potential security flaws in web applications. Built with a modern technology stack, it provides both powerful backend scanning capabilities and an intuitive, responsive frontend dashboard.
+---
 
-## 🌟 Features
+## ✨ Key Features
 
-* **Advanced Scanning Engine:** Built-in scanners for common web vulnerabilities including:
-  * SQL Injection (SQLi)
-  * Remote Code Execution (RCE)
-  * Security Headers Analysis
-* **Intelligent Crawler:** Automatically traverses web applications to map out attack surfaces.
-* **Modern Dashboard:** React-based frontend providing real-time scanning insights and interactive data visualization (via Recharts).
-* **Detailed Reporting:** Generates comprehensive security reports (PDF export via PDFKit).
+### 🏢 SaaS-Ready Architecture
+* **Strict Multi-Tenancy:** Data is securely isolated using tenant-scoped database queries across all services.
+* **Microservices Ready:** API backend, independent RabbitMQ scan workers, and a React SPA frontend.
+* **Out-of-Band (OOB) Interaction:** Built-in tracker for detecting "blind" vulnerabilities (RCE, SQLi, SSRF).
 
-## 🚀 Tech Stack
+### 🕵️ Advanced Vulnerability Scanning
+* **10+ Vulnerability Classes:** Automated detection of SQLi, XSS, RCE, SSRF, LFI/RFI, IDOR, CSRF, Secrets, and more.
+* **SSRF & OOB Detection:** Built-in tracker for detecting "blind" vulnerabilities via Out-of-Band interactions.
+* **Secrets Discovery:** Scans client-side JavaScript for hardcoded API keys (AWS, Stripe, GitHub, etc.) and credentials.
+* **Open Redirect Audit:** Identifies unsafe navigation patterns leveraged in phishing attacks.
+* **AI-Powered Analysis:** Uses OpenAI (GPT-4) to intelligently analyze payloads and filter false positives.
 
-### Frontend
-* **Framework:** React 19 with Vite
-* **State Management:** Zustand
-* **Routing:** React Router v7
-* **Icons:** Lucide React
-* **Charts:** Recharts
+### 🔐 Authentication & Security
+* **MFA & SSO:** Supports Two-Factor Authentication (TOTP) and Google OAuth2 Single Sign-On.
+* **RBAC:** Role-Based Access Control via secure JSON Web Tokens (JWT).
+* **SOC2/GDPR Compliance:** Built-in asynchronous Audit Logging for all sensitive data modifications.
 
-### Backend
-* **Runtime:** Node.js
-* **Framework:** Express.js
-* **Database:** SQLite (via sql.js)
-* **Real-time:** WebSockets (ws)
-* **Web Scraping:** Cheerio & Axios
+### 📊 Observability & Monitoring
+* **Full Stack Metrics:** Built-in Prometheus integration for real-time system performance tracking.
+* **Grafana Dashboards:** Beautiful, pre-configured dashboards for monitoring scan throughput and system health.
 
-## 🛠️ Getting Started
+---
 
-### Prerequisites
-Make sure you have Node.js and npm installed on your machine.
+## 🛠️ Technology Stack
 
-### Installation
+* **Frontend:** React, Vite, Recharts, Material 3 UI
+* **Backend:** Node.js, Express.js
+* **Database:** PostgreSQL, Redis (Caching/Limiting)
+* **Message Broker:** RabbitMQ
+* **Monitoring:** Prometheus, Grafana
+* **AI Engine:** OpenAI API
+* **Orchestration:** Docker Compose, Kubernetes
 
-1. Clone the repository and navigate into the project directory:
-   ```bash
-   cd WebFort
-   ```
+---
 
-2. Install dependencies for all workspaces from the root directory:
-   ```bash
-   npm install
-   ```
+## 🚦 Getting Started
 
-3. Seed the database with initial configuration/data:
-   ```bash
-   npm run seed
-   ```
-
-### Running the Application
-
-You can easily run both the frontend and backend development servers concurrently using the root workspace command:
-
+### Step 1 — Environment Setup
 ```bash
+cp .env.example .env
+cp .env.example backend/.env
+cp .env.example frontend/.env
+```
+Update your credentials in the `.env` files.
+
+### Step 2 — Start Infrastructure (Docker)
+```bash
+docker compose up -d
+```
+
+### Step 3 — Seed & Run
+```bash
+npm install
+npm run seed
 npm run dev
 ```
 
-Alternatively, you can run them individually:
-* **Frontend only:** `npm run dev:frontend`
-* **Backend only:** `npm run dev:backend`
+### 🏁 Local URLs
+| Service | URL | Default Port |
+|---|---|---|
+| 🖥️ **Frontend** | http://localhost:5173 | 5173 |
+| 🔌 **Backend API** | http://localhost:3002/api/health | 3002 |
+| 📊 **Monitoring** | http://localhost:3010 | 3010 (Grafana) |
+| 🐇 **RabbitMQ UI** | http://localhost:15672 | 15672 |
 
-## 📁 Project Structure
+---
 
-* `/frontend` - React application (Vite setup)
-* `/backend` - Express API & core scanning engine
-* `/docker` - Containerization configurations
-* `/docs` - Additional project documentation
+## 📚 Security Education Hub
 
-## 🧪 Testing
-Run backend tests using the built-in Node.js test runner:
-```bash
-npm run test
-```
+WebSecure offers an integrated **Security Education Hub** covering 10+ vulnerability classes. Developers can review OWASP guidelines, analyze vulnerable vs. secure code snippets, and learn remediation best practices directly within the platform.
 
-## 📦 Building for Production
-To build the frontend for production, run:
-```bash
-npm run build
-```
+---
 
 ## 📜 License
 This project is proprietary and confidential.
-# WebFort

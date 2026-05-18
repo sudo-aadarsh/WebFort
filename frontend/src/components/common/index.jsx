@@ -25,9 +25,31 @@ export const Button = ({
   );
 };
 
-export const Card = ({ children, className = '', glass = true, ...props }) => {
+export const Card = ({ children, className = '', hoverable = false, style = {}, ...props }) => {
+  const baseStyle = {
+    padding: '1.5rem',
+    display: 'flex',
+    flexDirection: 'column',
+    ...style
+  };
+  
   return (
-    <div className={`${glass ? 'glass-card' : 'glass-panel'} ${className}`} style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column' }} {...props}>
+    <div className={`card ${hoverable ? 'card-hover' : ''} ${className}`} style={baseStyle} {...props}>
+      {children}
+    </div>
+  );
+};
+
+export const Panel = ({ children, className = '', style = {}, ...props }) => {
+  const baseStyle = {
+    padding: '1.5rem',
+    display: 'flex',
+    flexDirection: 'column',
+    ...style
+  };
+  
+  return (
+    <div className={`panel ${className}`} style={baseStyle} {...props}>
       {children}
     </div>
   );
@@ -47,19 +69,20 @@ export const StatsCard = ({ title, value, icon: Icon, trend, colorClass = 'text-
   const trendIcon = isPositive ? '↑' : '↓';
   
   return (
-    <div className="glass-card stat-box animate-fade-in">
-      <div className="stat-header">
+    <div className="card stat-box animate-fade-in hover-lift" style={{ padding: '1.25rem', cursor: 'default' }}>
+      <div className="stat-header" style={{ marginBottom: '0.5rem' }}>
         <div>
-          <div className="stat-title">{title}</div>
-          <div className="stat-value">{value}</div>
+          <div className="stat-title" style={{ fontSize: '0.7rem', letterSpacing: '0.08em' }}>{title}</div>
+          <div className="stat-value" style={{ fontSize: '1.75rem', marginTop: '0.25rem' }}>{value}</div>
         </div>
-        <div className={`stat-icon-wrapper bg-${colorClass.replace('text-', '')}`} style={{ background: `var(--${colorClass.replace('text-', '')})`, color: 'white', opacity: 0.9 }}>
-          <Icon size={24} />
+        <div className={`stat-icon-wrapper bg-${colorClass.replace('text-', '')}`} style={{ padding: '0.625rem', borderRadius: '12px', background: `var(--${colorClass.replace('text-', '')}-container)`, color: `var(--${colorClass.replace('text-', '')})` }}>
+          <Icon size={20} />
         </div>
       </div>
       {trend && (
-        <div style={{ fontSize: '0.875rem', color: trendColor, display: 'flex', alignItems: 'center', marginTop: 'auto', fontWeight: 500 }}>
-          {trendIcon} {Math.abs(trend)}% from last week
+        <div style={{ fontSize: '0.75rem', color: trendColor, display: 'flex', alignItems: 'center', marginTop: '0.25rem', fontWeight: 600 }}>
+          <span style={{ marginRight: '0.25rem' }}>{trendIcon} {Math.abs(trend)}%</span> 
+          <span style={{ opacity: 0.7, fontWeight: 400 }}>vs last week</span>
         </div>
       )}
     </div>

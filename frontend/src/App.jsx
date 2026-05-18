@@ -6,12 +6,13 @@ import { Dashboard } from './pages/Dashboard';
 import { Scanner } from './pages/Scanner';
 import { Vulnerabilities } from './pages/Vulnerabilities';
 import { Reports } from './pages/Reports';
+import { ScanReport } from './pages/ScanReport';
 import { useAuthStore, useThemeStore } from './store';
+import api from './services/api';
 
 import { Settings } from './pages/Settings';
-
-// Basic Admin placeholder
-const AdminPanel = () => <div className="p-6"><h1 className="text-2xl text-white font-bold mb-4">Admin Panel</h1><p className="text-text-muted">User management coming soon.</p></div>;
+import { Education } from './pages/Education';
+import { useWebSocket } from './hooks/useWebSocket';
 
 const ProtectedRoute = ({ children, requireAdmin }) => {
   const { isAuthenticated, user } = useAuthStore();
@@ -24,6 +25,10 @@ const ProtectedRoute = ({ children, requireAdmin }) => {
 
 const App = () => {
   const { theme } = useThemeStore();
+  const { token, isAuthenticated, setUser, logout } = useAuthStore();
+  
+  // Initialize global websocket for real-time updates
+  useWebSocket();
 
   useEffect(() => {
     if (theme === 'dark') {
@@ -32,6 +37,23 @@ const App = () => {
       document.documentElement.classList.remove('dark');
     }
   }, [theme]);
+
+  useEffect(() => {
+    if (isAuthenticated && token) {
+      fetchUser();
+    }
+  }, [isAuthenticated, token]);
+
+  const fetchUser = async () => {
+    try {
+      const response = await api.get('/auth/me');
+      setUser(response.data.user);
+    } catch (err) {
+      if (err.response?.status === 401) {
+        logout();
+      }
+    }
+  };
 
   return (
     <BrowserRouter>
@@ -47,8 +69,9 @@ const App = () => {
         <Route path="/scans" element={<ProtectedRoute><Scanner /></ProtectedRoute>} />
         <Route path="/vulnerabilities" element={<ProtectedRoute><Vulnerabilities /></ProtectedRoute>} />
         <Route path="/reports" element={<ProtectedRoute><Reports /></ProtectedRoute>} />
+        <Route path="/reports/:id" element={<ProtectedRoute><ScanReport /></ProtectedRoute>} />
         <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
-        <Route path="/admin" element={<ProtectedRoute requireAdmin><AdminPanel /></ProtectedRoute>} />
+        <Route path="/education" element={<ProtectedRoute><Education /></ProtectedRoute>} />
         
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

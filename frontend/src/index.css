@@ -29,7 +29,7 @@
   --md-sys-color-outline: #73777f;
   --md-sys-color-outline-variant: #c3c7cf;
 
-  /* Map to WebFort Variables */
+  /* Map to WebSecure Variables */
   --bg-base: var(--md-sys-color-surface);
   --bg-card: var(--md-sys-color-surface-container-lowest);
   --bg-hover: var(--md-sys-color-surface-container-high);
@@ -41,11 +41,17 @@
   
   /* Severity Colors (adjusted for M3 contrast) */
   --critical: #ba1a1a;
+  --critical-rgb: 186, 26, 26;
   --high: #b3261e;
+  --high-rgb: 179, 38, 30;
   --medium: #6b5c00;
+  --medium-rgb: 107, 92, 0;
   --low: #0061a4;
+  --low-rgb: 0, 97, 164;
   --info: #315da8;
+  --info-rgb: 49, 93, 168;
   --success: #146c2e;
+  --success-rgb: 20, 108, 46;
   
   --text-main: var(--md-sys-color-on-surface);
   --text-muted: var(--md-sys-color-on-surface-variant);
@@ -66,7 +72,8 @@
   --shadow-2: 0px 1px 2px 0px rgba(0,0,0,0.3), 0px 2px 6px 2px rgba(0,0,0,0.15);
   --shadow-3: 0px 1px 3px 0px rgba(0,0,0,0.3), 0px 4px 8px 3px rgba(0,0,0,0.15);
   
-  --transition: all 0.3s cubic-bezier(0.2, 0, 0, 1);
+  --transition: all 0.2s ease-out;
+  --transition-smooth: all 0.2s ease-in-out;
 }
 
 html.dark {
@@ -95,7 +102,7 @@ html.dark {
   --md-sys-color-outline: #8d9199;
   --md-sys-color-outline-variant: #43474e;
 
-  /* Map to WebFort Variables */
+  /* Map to WebSecure Variables */
   --bg-base: var(--md-sys-color-surface);
   --bg-card: var(--md-sys-color-surface-container-low);
   --bg-hover: var(--md-sys-color-surface-container-high);
@@ -137,29 +144,98 @@ body {
   transition: background-color 0.3s ease, color 0.3s ease;
 }
 
-/* Material 3 Containers (replacing glassmorphism) */
-.glass {
-  background: var(--md-sys-color-surface-container);
-  border-radius: var(--radius-md);
-  transition: var(--transition);
-}
-
-.glass-panel {
-  background: var(--md-sys-color-surface-container-low);
-  border-radius: var(--radius-md);
-  transition: var(--transition);
-}
-
-.glass-card {
-  background: var(--md-sys-color-surface-container-lowest);
-  border-radius: var(--radius-md);
+/* Modern Material 3 Container System */
+.card {
+  background: var(--bg-card);
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
   box-shadow: var(--shadow-1);
   transition: var(--transition);
+  overflow: hidden;
+  position: relative;
 }
 
-.glass-card:hover {
-  transform: translateY(-2px);
+.card-hover:hover {
   box-shadow: var(--shadow-2);
+  border-color: var(--md-sys-color-outline);
+  transform: translateY(-2px);
+}
+
+.panel {
+  background: var(--md-sys-color-surface-container-low);
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  transition: var(--transition);
+}
+
+/* Standardized Tabs & Navigation */
+.tab-container {
+  display: flex;
+  gap: 0.5rem;
+  padding: 0.25rem;
+  background: var(--md-sys-color-surface-container-high);
+  border-radius: var(--radius-full);
+  width: fit-content;
+}
+
+.tab-item {
+  padding: 0.625rem 1.5rem;
+  border-radius: var(--radius-full);
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  transition: var(--transition);
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.tab-item:hover {
+  background: rgba(0, 0, 0, 0.05);
+  color: var(--text-main);
+}
+
+.tab-item.active {
+  background: var(--md-sys-color-primary-container);
+  color: var(--md-sys-color-on-primary-container);
+  box-shadow: var(--shadow-1);
+}
+
+html.dark .tab-item:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+/* Sidebar Nav (Specific Case) */
+.settings-nav-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.875rem 1rem;
+  border-radius: var(--radius);
+  color: var(--text-muted);
+  font-weight: 500;
+  text-decoration: none;
+  transition: var(--transition);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  width: 100%;
+  text-align: left;
+}
+
+.settings-nav-item:hover {
+  background: var(--bg-hover);
+  color: var(--text-main);
+}
+
+.settings-nav-item.active {
+  background: var(--md-sys-color-secondary-container);
+  color: var(--md-sys-color-on-secondary-container);
+  font-weight: 600;
 }
 
 /* Base Layout */
@@ -261,7 +337,6 @@ body {
 
 .main-content-wrapper {
   flex: 1;
-  margin-left: 280px;
   display: flex;
   flex-direction: column;
   min-height: 100vh;
@@ -403,7 +478,7 @@ body {
 
 .charts-grid {
   display: grid;
-  grid-template-columns: 2fr 1fr;
+  grid-template-columns: 2.2fr 1fr;
   gap: 1.5rem;
   margin-bottom: 1.5rem;
 }
@@ -549,14 +624,26 @@ tr:last-child td {
   background: var(--md-sys-color-surface-variant);
 }
 
-/* Animations */
+/* Smooth & Simple Animations */
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(15px); }
+  from { opacity: 0; transform: translateY(8px); }
   to { opacity: 1; transform: translateY(0); }
 }
 
 .animate-fade-in {
-  animation: fadeIn 0.4s cubic-bezier(0.2, 0, 0, 1) forwards;
+  animation: fadeIn 0.3s ease-out forwards;
+}
+
+.hover-lift {
+  transition: var(--transition);
+}
+
+.hover-lift:hover {
+  transform: translateY(-2px);
+}
+
+.hover-lift:active {
+  transform: scale(0.98);
 }
 
 /* Form Styles */
@@ -610,5 +697,15 @@ tr:last-child td {
 .bg-info { background-color: var(--info); }
 
 .flex-center { display: flex; align-items: center; justify-content: center; }
+.flex { display: flex; }
+.items-center { align-items: center; }
+.justify-center { justify-content: center; }
+.min-h-screen { min-height: 100vh; }
+.p-4 { padding: 1rem; }
+.p-6 { padding: 1.5rem; }
+.mb-4 { margin-bottom: 1rem; }
+.text-2xl { font-size: 1.5rem; }
+.text-white { color: #ffffff; }
+.font-bold { font-weight: 700; }
 .gap-2 { gap: 0.5rem; }
 .gap-4 { gap: 1rem; }

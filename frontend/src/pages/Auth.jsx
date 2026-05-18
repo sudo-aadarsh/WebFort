@@ -36,11 +36,19 @@ export const Login = () => {
           <ShieldAlert color="white" size={32} />
         </div>
         <h1 style={{ fontSize: '1.875rem', fontWeight: 700, color: 'white', marginBottom: '0.5rem' }}>Welcome Back</h1>
-        <p style={{ color: 'var(--text-muted)' }}>Sign in to access WebFort Enterprise</p>
+        <p style={{ color: 'var(--text-muted)' }}>Sign in to access WebSecure Enterprise</p>
       </div>
 
       <Card>
-        <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+        <div className="tab-container" style={{ alignSelf: 'center', marginBottom: '2.5rem' }}>
+          <div className="tab-item active">
+            Login
+          </div>
+          <Link to="/register" className="tab-item">
+            Register
+          </Link>
+        </div>
+        <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
           {error && (
             <div style={{ padding: '0.75rem', background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.3)', color: 'var(--critical)', borderRadius: 'var(--radius)', fontSize: '0.875rem', textAlign: 'center' }}>
               {error}
@@ -52,7 +60,7 @@ export const Login = () => {
             type="email" 
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            placeholder="admin@webfort.io"
+            placeholder="admin@websecure.io"
             required
           />
           
@@ -84,8 +92,8 @@ export const Login = () => {
         
         <div style={{ marginTop: '1.5rem', paddingTop: '1.5rem', borderTop: '1px solid rgba(255, 255, 255, 0.1)', textAlign: 'center', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
           <p>Demo Credentials:</p>
-          <p style={{ marginTop: '0.25rem' }}>Admin: admin@webfort.io / admin123</p>
-          <p>User: demo@webfort.io / demo1234</p>
+          <p style={{ marginTop: '0.25rem' }}>Admin: admin@websecure.io / admin123</p>
+          <p>User: demo@websecure.io / demo1234</p>
         </div>
       </Card>
     </div>
@@ -126,7 +134,15 @@ export const Register = () => {
       </div>
 
       <Card>
-        <form onSubmit={handleRegister} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+        <div className="tab-container" style={{ alignSelf: 'center', marginBottom: '2.5rem' }}>
+          <Link to="/login" className="tab-item">
+            Login
+          </Link>
+          <div className="tab-item active">
+            Register
+          </div>
+        </div>
+        <form onSubmit={handleRegister} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
           {error && (
             <div style={{ padding: '0.75rem', background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.3)', color: 'var(--critical)', borderRadius: 'var(--radius)', fontSize: '0.875rem', textAlign: 'center' }}>
               {error}

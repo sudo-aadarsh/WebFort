@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: websecure
+  labels:
+    app.kubernetes.io/name: websecure
+    app.kubernetes.io/part-of: websecure-platform

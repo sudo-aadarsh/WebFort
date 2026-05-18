@@ -1,5 +1,5 @@
 {
-  "name": "webfort",
+  "name": "websecure",
   "version": "1.0.0",
   "description": "Enterprise-grade web vulnerability scanner",
   "private": true,
@@ -8,9 +8,10 @@
     "backend"
   ],
   "scripts": {
-    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
+    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:worker\" \"npm run dev:frontend\"",
     "dev:frontend": "npm run dev --workspace=frontend",
     "dev:backend": "npm run dev --workspace=backend",
+    "dev:worker": "npm run dev:worker --workspace=backend",
     "build": "npm run build --workspace=frontend",
     "test": "npm run test --workspace=backend",
     "seed": "npm run seed --workspace=backend"

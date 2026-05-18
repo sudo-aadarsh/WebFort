@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import { Play, Search, Shield, AlertTriangle, ShieldCheck, Server } from 'lucide-react';
 import api from '../services/api';
 import { useScanStore } from '../store';
-import { useWebSocket } from '../hooks/useWebSocket';
 import { Card, Button, Input, Badge } from '../components/common';
 
 export const Scanner = () => {
@@ -11,11 +10,9 @@ export const Scanner = () => {
   const [scanType, setScanType] = useState('full');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [scans, setScans] = useState([]);
   const navigate = useNavigate();
   
-  const { activeScans } = useScanStore();
-  useWebSocket();
+  const { scans, setScans, activeScans, setActiveScans, addScan } = useScanStore();
 
   useEffect(() => {
     fetchScans();
@@ -24,9 +21,15 @@ export const Scanner = () => {
   const fetchScans = async () => {
     try {
       const response = await api.get('/scans');
-      setScans(response.data.scans);
+      const allScans = response.data.scans;
+      setScans(allScans);
+      
+      // Update active scans in store (include running and queued)
+      const active = allScans.filter(s => ['running', 'queued'].includes(s.status));
+      setActiveScans(active);
     } catch (err) {
       console.error(err);
+      setError('Failed to fetch scan history');
     }
   };
 
@@ -38,9 +41,10 @@ export const Scanner = () => {
     setError('');
 
     try {
-      await api.post('/scans', { targetUrl, scanType, scanDepth: 3 });
+      const response = await api.post('/scans', { targetUrl, scanType, scanDepth: 3 });
+      const newScan = response.data.scan;
       setTargetUrl('');
-      fetchScans();
+      addScan(newScan);
     } catch (err) {
       setError(err.response?.data?.error || 'Failed to start scan');
     } finally {
@@ -110,15 +114,16 @@ export const Scanner = () => {
                       borderRadius: 'var(--radius)',
                       border: '1px solid',
                       borderColor: scanType === type.id ? 'var(--primary)' : 'var(--border)',
-                      background: scanType === type.id ? 'rgba(99, 102, 241, 0.1)' : 'rgba(255, 255, 255, 0.02)',
-                      boxShadow: scanType === type.id ? 'var(--shadow-glow)' : 'none',
+                      background: scanType === type.id ? 'var(--md-sys-color-primary-container)' : 'var(--bg-card)',
+                      boxShadow: scanType === type.id ? 'var(--shadow-2)' : 'none',
                       cursor: 'pointer',
-                      transition: 'var(--transition)'
+                      transition: 'var(--transition)',
+                      color: scanType === type.id ? 'var(--md-sys-color-on-primary-container)' : 'inherit'
                     }}
                   >
-                    <type.icon style={{ marginBottom: '0.75rem', color: scanType === type.id ? 'var(--primary)' : 'var(--text-muted)' }} size={24} />
-                    <h4 style={{ fontWeight: 600, color: 'var(--text-main)', marginBottom: '0.25rem' }}>{type.title}</h4>
-                    <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', lineHeight: 1.5 }}>{type.desc}</p>
+                    <type.icon style={{ marginBottom: '0.75rem', color: scanType === type.id ? 'var(--md-sys-color-on-primary-container)' : 'var(--text-muted)' }} size={24} />
+                    <h4 style={{ fontWeight: 600, color: 'inherit', marginBottom: '0.25rem' }}>{type.title}</h4>
+                    <p style={{ fontSize: '0.75rem', color: 'inherit', opacity: 0.8, lineHeight: 1.5 }}>{type.desc}</p>
                   </div>
                 ))}
               </div>
@@ -141,20 +146,21 @@ export const Scanner = () => {
               </div>
             ) : (
               activeScans.map(scan => (
-                <div key={scan.id} style={{ padding: '1rem', borderRadius: 'var(--radius)', background: 'rgba(0,0,0,0.2)', border: '1px solid var(--border)' }}>
+                <div key={scan.id} style={{ padding: '1rem', borderRadius: 'var(--radius)', background: 'var(--bg-hover)', border: '1px solid var(--border)' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.5rem' }}>
                     <div style={{ fontWeight: 500, color: 'var(--text-main)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', paddingRight: '1rem' }}>{scan.target_url}</div>
                     <button onClick={() => handleCancelScan(scan.id)} style={{ fontSize: '0.75rem', color: 'var(--critical)', background: 'none', border: 'none', cursor: 'pointer' }}>Cancel</button>
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '0.5rem' }}>
-                    <span>{scan.message || 'Running...'}</span>
+                    <span style={{ textTransform: 'uppercase', fontWeight: 600 }}>{scan.status}</span>
                     <span>{scan.progress || 0}%</span>
                   </div>
-                  <div style={{ width: '100%', background: 'rgba(0,0,0,0.4)', borderRadius: '99px', height: '6px', overflow: 'hidden' }}>
+                  <div style={{ width: '100%', background: 'rgba(0,0,0,0.1)', borderRadius: '99px', height: '6px', overflow: 'hidden' }}>
                     <div 
-                      style={{ background: 'var(--primary)', height: '100%', borderRadius: '99px', transition: 'width 0.5s ease-out', width: `${scan.progress || 0}%` }}
+                      style={{ background: 'var(--primary)', height: '100%', borderRadius: '99px', transition: 'width 0.4s ease-out', width: `${scan.progress || 0}%` }}
                     ></div>
                   </div>
+                  {scan.message && <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', marginTop: '0.5rem' }}>{scan.message}</div>}
                 </div>
               ))
             )}
@@ -183,7 +189,14 @@ export const Scanner = () => {
                 </tr>
               ) : (
                 scans.map(scan => (
-                  <tr key={scan.id}>
+                  <tr 
+                    key={scan.id}
+                    onClick={() => scan.status === 'completed' && navigate(`/reports/${scan.id}`)}
+                    style={{ 
+                      cursor: scan.status === 'completed' ? 'pointer' : 'default',
+                      transition: 'background-color 0.2s'
+                    }}
+                  >
                     <td style={{ fontWeight: 500, color: 'var(--text-main)' }}>{scan.target_url}</td>
                     <td style={{ textTransform: 'uppercase', fontSize: '0.75rem', letterSpacing: '0.05em', color: 'var(--text-muted)' }}>{scan.scan_type}</td>
                     <td>
@@ -195,7 +208,14 @@ export const Scanner = () => {
                         {scan.status}
                       </Badge>
                     </td>
-                    <td style={{ color: 'var(--text-muted)' }}>{scan.progress}%</td>
+                    <td style={{ color: 'var(--text-muted)', width: '120px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        <div style={{ flex: 1, height: '4px', background: 'rgba(0,0,0,0.05)', borderRadius: '2px', overflow: 'hidden' }}>
+                          <div style={{ height: '100%', background: 'var(--primary)', width: `${scan.progress || 0}%` }}></div>
+                        </div>
+                        <span style={{ fontSize: '0.75rem' }}>{scan.progress || 0}%</span>
+                      </div>
+                    </td>
                     <td>
                       {scan.status === 'completed' ? (
                         <div style={{ display: 'flex', gap: '0.25rem' }}>
@@ -211,9 +231,18 @@ export const Scanner = () => {
                     <td>
                       <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
                         {scan.status === 'completed' && (
-                          <Button variant="secondary" onClick={() => navigate('/reports', { state: { scanId: scan.id } })} style={{ padding: '0.25rem 0.5rem', fontSize: '0.75rem' }}>Report</Button>
+                          <Button 
+                            variant="secondary" 
+                            onClick={(e) => { e.stopPropagation(); navigate(`/reports/${scan.id}`); }} 
+                            style={{ padding: '0.25rem 0.5rem', fontSize: '0.75rem' }}
+                          >
+                            View Report
+                          </Button>
                         )}
-                        <button onClick={() => handleCancelScan(scan.id)} style={{ color: 'var(--critical)', fontSize: '0.875rem', background: 'none', border: 'none', cursor: 'pointer' }}>
+                        <button 
+                          onClick={(e) => { e.stopPropagation(); handleCancelScan(scan.id); }} 
+                          style={{ color: 'var(--critical)', fontSize: '0.875rem', background: 'none', border: 'none', cursor: 'pointer' }}
+                        >
                           Delete
                         </button>
                       </div>

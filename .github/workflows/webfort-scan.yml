@@ -1,0 +1,60 @@
+name: WebFort Security Scan
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  security-scan:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    # Assuming WebFort exposes a CLI tool or API for CI/CD
+    - name: Run WebFort Scan
+      env:
+        WEBFORT_API_KEY: ${{ secrets.WEBFORT_API_KEY }}
+        WEBFORT_API_URL: ${{ secrets.WEBFORT_API_URL }} # e.g. https://api.webfort.io
+        TARGET_URL: "https://staging.yourdomain.com" # The URL to scan
+      run: |
+        echo "Triggering WebFort scan for $TARGET_URL..."
+        
+        # Trigger the scan via API
+        SCAN_RES=$(curl -s -X POST "$WEBFORT_API_URL/api/integrations/cicd/trigger" \
+          -H "Authorization: Bearer $WEBFORT_API_KEY" \
+          -H "Content-Type: application/json" \
+          -d "{\"targetUrl\":\"$TARGET_URL\",\"scanType\":\"quick\",\"scanDepth\":2}")
+        
+        SCAN_ID=$(echo $SCAN_RES | jq -r '.scanId')
+        echo "Scan triggered. ID: $SCAN_ID"
+        
+        # Poll for status
+        while true; do
+          STATUS_RES=$(curl -s -X GET "$WEBFORT_API_URL/api/integrations/cicd/status/$SCAN_ID" \
+            -H "Authorization: Bearer $WEBFORT_API_KEY")
+          
+          STATUS=$(echo $STATUS_RES | jq -r '.status')
+          echo "Current status: $STATUS"
+          
+          if [ "$STATUS" = "completed" ] || [ "$STATUS" = "failed" ]; then
+            PASSED=$(echo $STATUS_RES | jq -r '.passed')
+            CRITICAL=$(echo $STATUS_RES | jq -r '.vulnerabilities.critical')
+            HIGH=$(echo $STATUS_RES | jq -r '.vulnerabilities.high')
+            
+            echo "Scan finished. Critical: $CRITICAL, High: $HIGH"
+            
+            if [ "$PASSED" = "true" ]; then
+              echo "WebFort scan passed!"
+              exit 0
+            else
+              echo "WebFort scan failed due to high/critical vulnerabilities."
+              exit 1
+            fi
+          fi
+          
+          sleep 10
+        done
